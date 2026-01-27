@@ -1,0 +1,20 @@
+# =============================================================================
+# Hello World - Primeiro script HMP
+# =============================================================================
+# Este exemplo demonstra os conceitos basicos do HMP:
+# - Definicao de variaveis com SET
+# - Interpolacao de strings com ${...}
+# - Chamada de tools com CALL
+# - Retorno de valores com RETURN
+
+# Define uma variavel de texto
+SET nome TO "Mundo"
+
+# Cria mensagem usando interpolacao
+SET mensagem TO "Ola, ${nome}!"
+
+# Imprime a mensagem no console
+CALL log.print WITH message=${mensagem}
+
+# Retorna o resultado
+RETURN ${mensagem}

@@ -1,0 +1,54 @@
+# =============================================================================
+# Manipulacao de Strings
+# =============================================================================
+# Este exemplo demonstra:
+# - Tools de string (upper, lower, split, join, etc)
+# - Interpolacao de strings
+# - Formatacao de texto
+
+CALL log.print WITH message="=== Manipulacao de Strings ==="
+
+# Conversao de caso
+SET texto TO "Hello World"
+CALL log.print WITH message="Texto original: ${texto}"
+
+CALL string.upper WITH text=${texto}
+CALL log.print WITH message="Maiusculas: ${last_result}"
+
+CALL string.lower WITH text=${texto}
+CALL log.print WITH message="Minusculas: ${last_result}"
+
+# Split e Join
+SET csv TO "maca,banana,laranja,uva"
+CALL log.print WITH message="CSV: ${csv}"
+
+CALL string.split WITH text=${csv}, separator=","
+SET frutas TO ${last_result}
+CALL log.print WITH message="Lista: ${frutas}"
+
+CALL string.join WITH items=${frutas}, separator=" | "
+CALL log.print WITH message="Formatado: ${last_result}"
+
+# Busca e substituicao
+SET frase TO "O rato roeu a roupa do rei de Roma"
+CALL log.print WITH message="Frase: ${frase}"
+
+CALL string.contains WITH text=${frase}, search="rei"
+CALL log.print WITH message="Contem 'rei': ${last_result}"
+
+CALL string.replace WITH text=${frase}, old="rei", new="principe"
+CALL log.print WITH message="Substituido: ${last_result}"
+
+# Tamanho e substring
+CALL string.length WITH text=${frase}
+CALL log.print WITH message="Tamanho: ${last_result} caracteres"
+
+CALL string.substring WITH text=${frase}, start=0, end=10
+CALL log.print WITH message="Primeiros 10 chars: ${last_result}"
+
+# Padding
+SET numero TO "42"
+CALL string.pad_left WITH text=${numero}, length=5, char="0"
+CALL log.print WITH message="Numero formatado: ${last_result}"
+
+RETURN "Demonstracao de strings concluida"

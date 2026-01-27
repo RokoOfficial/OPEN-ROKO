@@ -1,0 +1,33 @@
+# =============================================================================
+# Módulo de Utilidades - Arquivo para ser importado
+# =============================================================================
+# Este arquivo contém funções reutilizáveis que podem ser importadas
+# por outros scripts HMP usando: IMPORT "modulo_utilidades.hmp"
+
+# Função para validar se um número é positivo
+FUNCTION eh_positivo(numero)
+    IF ${numero} > 0 THEN
+        RETURN true
+    ELSE
+        RETURN false
+    ENDIF
+ENDFUNCTION
+
+# Função para calcular o dobro de um número
+FUNCTION dobro(valor)
+    RETURN ${valor * 2}
+ENDFUNCTION
+
+# Função para validar se texto não está vazio
+FUNCTION texto_valido(texto)
+    IF ${string.length WITH text=${texto}} > 0 THEN
+        RETURN true
+    ELSE
+        RETURN false
+    ENDIF
+ENDFUNCTION
+
+# Função para retornar o primeiro elemento
+FUNCTION primeiro(lista)
+    RETURN ${lista[0]}
+ENDFUNCTION

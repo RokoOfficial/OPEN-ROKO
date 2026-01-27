@@ -1,0 +1,61 @@
+# =============================================================================
+# Calculadora - Funcoes e operacoes matematicas
+# =============================================================================
+# Este exemplo demonstra:
+# - Definicao de funcoes com FUNCTION/ENDFUNCTION
+# - Chamada de tools matematicas
+# - Loops FOR EACH para iteracao
+# - Retorno de objetos complexos
+
+# -----------------------------------------------------------------------------
+# Definicao de Funcoes
+# -----------------------------------------------------------------------------
+
+# Funcao para somar dois numeros
+FUNCTION somar(a, b)
+    CALL math.sum WITH a=${a}, b=${b}
+    RETURN ${last_result}
+ENDFUNCTION
+
+# Funcao para multiplicar dois numeros
+FUNCTION multiplicar(a, b)
+    CALL math.multiply WITH a=${a}, b=${b}
+    RETURN ${last_result}
+ENDFUNCTION
+
+# Funcao para calcular media de uma lista
+FUNCTION calcular_media(valores)
+    SET soma TO 0
+    SET count TO 0
+    FOR EACH v IN ${valores}
+        SET soma TO ${soma + v}
+        SET count TO ${count + 1}
+    ENDFOR
+    RETURN ${soma / count}
+ENDFUNCTION
+
+# -----------------------------------------------------------------------------
+# Usando as Funcoes
+# -----------------------------------------------------------------------------
+
+SET x TO 10
+SET y TO 5
+
+# Soma
+CALL somar WITH a=${x}, b=${y}
+SET resultado_soma TO ${last_result}
+CALL log.print WITH message="Soma: ${x} + ${y} = ${resultado_soma}"
+
+# Multiplicacao
+CALL multiplicar WITH a=${x}, b=${y}
+SET resultado_mult TO ${last_result}
+CALL log.print WITH message="Multiplicacao: ${x} * ${y} = ${resultado_mult}"
+
+# Media
+SET numeros TO [10, 20, 30, 40, 50]
+CALL calcular_media WITH valores=${numeros}
+SET media TO ${last_result}
+CALL log.print WITH message="Media de [10, 20, 30, 40, 50]: ${media}"
+
+# Retorna objeto com todos os resultados
+RETURN {"soma": ${resultado_soma}, "multiplicacao": ${resultado_mult}, "media": ${media}}

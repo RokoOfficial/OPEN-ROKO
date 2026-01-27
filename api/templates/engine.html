@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}HMP Engine - Linguagem de Automação{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>HMP Engine</h1>
+        <p>Linguagem declarativa para automação</p>
+    </div>
+</section>
+
+<section class="content-section">
+    <div class="container">
+        <div class="engine-box" style="margin-bottom: 50px;">
+            <span class="badge">OPEN SOURCE</span>
+            <h2 style="color: var(--accent);">Human Machine Protocol</h2>
+            <p>Linguagem simples e poderosa para automação de fluxos lógicos.</p>
+        </div>
+
+        <h2>O que é o HMP?</h2>
+        <p>
+            HMP (Human Machine Protocol) é uma linguagem declarativa projetada para 
+            automação de processos. Com sintaxe simples e legível, permite criar 
+            fluxos complexos de forma intuitiva.
+        </p>
+
+        <h2>Exemplo Rápido</h2>
+        <pre class="code-block"># Variáveis
+SET nome TO "Maria"
+SET idade TO 25
+
+# Chamada de Tools
+CALL math.sum WITH a=10, b=5
+SET resultado TO ${last_result["default"]}
+
+# Condicionais
+IF ${resultado} &gt; 10 THEN
+    CALL log.print WITH message="Maior que 10!"
+ENDIF
+
+# Loops
+LOOP 3 TIMES
+    CALL log.print WITH message="Iteração ${loop_index}"
+ENDLOOP</pre>
+
+        <h2>Categorias de Tools</h2>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>math (13)</h4>
+                <p>Operações matemáticas: sum, multiply, divide, sqrt, etc.</p>
+            </div>
+            <div class="feature-item">
+                <h4>string (16)</h4>
+                <p>Manipulação de texto: upper, lower, trim, concat, etc.</p>
+            </div>
+            <div class="feature-item">
+                <h4>list (13)</h4>
+                <p>Operações com listas: push, pop, get, filter, etc.</p>
+            </div>
+            <div class="feature-item">
+                <h4>json (2)</h4>
+                <p>Serialização: parse, stringify</p>
+            </div>
+            <div class="feature-item">
+                <h4>date (5)</h4>
+                <p>Data e hora: now, format, parse, add, diff</p>
+            </div>
+            <div class="feature-item">
+                <h4>http (2)</h4>
+                <p>Requisições: get, post</p>
+            </div>
+            <div class="feature-item">
+                <h4>crypto (2)</h4>
+                <p>Criptografia: hash, uuid</p>
+            </div>
+            <div class="feature-item">
+                <h4>random (3)</h4>
+                <p>Aleatoriedade: number, choice, shuffle</p>
+            </div>
+            <div class="feature-item">
+                <h4>log (2)</h4>
+                <p>Logging: print, write</p>
+            </div>
+            <div class="feature-item">
+                <h4>system (2)</h4>
+                <p>Sistema: env, sleep</p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 50px;">
+            <a href="/engine/syntax" class="btn btn-primary">Sintaxe Completa</a>
+            <a href="/engine/tools" class="btn btn-secondary">Todas as Tools</a>
+            <a href="/api" class="btn btn-secondary">API REST</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

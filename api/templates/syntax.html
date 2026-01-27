@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}Sintaxe HMP{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>Sintaxe HMP</h1>
+        <p>Referência completa da linguagem</p>
+    </div>
+</section>
+
+<section class="content-section">
+    <div class="container">
+        <h2>Variáveis</h2>
+        <pre class="code-block"># Tipos básicos
+SET nome TO "Maria"
+SET idade TO 25
+SET preco TO 19.99
+SET ativo TO true
+
+# Listas
+SET frutas TO ["maçã", "banana", "laranja"]
+
+# Expressões
+SET dobro TO ${idade * 2}
+SET saudacao TO "Olá, ${nome}!"</pre>
+
+        <h2>Chamada de Tools</h2>
+        <pre class="code-block"># Sem parâmetros
+CALL crypto.uuid
+
+# Com parâmetros
+CALL math.sum WITH a=10, b=5
+
+# Com variáveis
+SET x TO 100
+CALL math.multiply WITH a=${x}, b=2
+
+# Resultado
+SET resultado TO ${last_result["default"]}</pre>
+
+        <h2>Condicionais</h2>
+        <pre class="code-block">IF ${idade} >= 18 THEN
+    CALL log.print WITH message="Maior de idade"
+ELSE
+    CALL log.print WITH message="Menor de idade"
+ENDIF</pre>
+
+        <h2>Loops</h2>
+        <pre class="code-block"># Loop N vezes
+LOOP 5 TIMES
+    CALL log.print WITH message="Iteração ${loop_index}"
+ENDLOOP
+
+# While
+SET contador TO 0
+WHILE ${contador} < 5
+    SET contador TO ${contador + 1}
+ENDWHILE
+
+# For Each
+SET nomes TO ["Ana", "Bruno", "Carlos"]
+FOR EACH nome IN ${nomes}
+    CALL log.print WITH message="Olá, ${nome}!"
+ENDFOR</pre>
+
+        <h2>Funções</h2>
+        <pre class="code-block">FUNCTION calcular_area(largura, altura)
+    CALL math.multiply WITH a=${largura}, b=${altura}
+    RETURN ${last_result["default"]}
+ENDFUNCTION
+
+CALL calcular_area WITH largura=10, altura=5
+SET area TO ${last_result["default"]}</pre>
+
+        <h2>Tratamento de Erros</h2>
+        <pre class="code-block">TRY
+    CALL http.get WITH url="https://api.exemplo.com"
+    SET dados TO ${last_result}
+CATCH
+    CALL log.print WITH message="Erro: ${error}"
+    SET dados TO {"fallback": true}
+ENDTRY</pre>
+
+        <h2>Execução Paralela</h2>
+        <pre class="code-block">PARALLEL
+    CALL http.get WITH url="https://api.com/1", label="r1"
+    CALL http.get WITH url="https://api.com/2", label="r2"
+    CALL http.get WITH url="https://api.com/3", label="r3"
+ENDPARALLEL
+
+SET dados1 TO ${last_result["r1"]}
+SET dados2 TO ${last_result["r2"]}</pre>
+
+        <h2>Operadores</h2>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>Aritméticos</h4>
+                <p><code>+ - * / % **</code></p>
+            </div>
+            <div class="feature-item">
+                <h4>Comparação</h4>
+                <p><code>== != &gt; &lt; &gt;= &lt;=</code></p>
+            </div>
+            <div class="feature-item">
+                <h4>Lógicos</h4>
+                <p><code>AND OR NOT</code></p>
+            </div>
+            <div class="feature-item">
+                <h4>Acesso</h4>
+                <p><code>${lista[0]} ${obj["chave"]}</code></p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 50px;">
+            <a href="/engine" class="btn btn-secondary">Voltar</a>
+            <a href="/engine/tools" class="btn btn-primary">Ver Tools</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

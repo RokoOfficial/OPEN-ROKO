@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+
+{% block title %}OPENROKOS - Sistema Operacional Cognitivo{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <div class="hero-content">
+        <h1>OPENROKOS</h1>
+        <p class="subtitle">Sistema Operacional Cognitivo</p>
+        <p class="description">
+            Automatize fluxos complexos com precisão e rastreabilidade.
+            Resultados determinísticos. Auditoria completa. Escalável.
+        </p>
+        <div class="btn-group">
+            <a href="/openrokos" class="btn btn-primary">Conhecer</a>
+            <a href="/engine" class="btn btn-secondary">HMP Engine</a>
+        </div>
+    </div>
+</section>
+
+<section class="pillars">
+    <div class="container">
+        <h2 class="section-title">Por que OPENROKOS?</h2>
+        <div class="pillars-grid">
+            <div class="pillar-card">
+                <div class="pillar-icon">D</div>
+                <h3>Determinístico</h3>
+                <p>Cada execução produz o mesmo resultado. Sem surpresas ou comportamentos aleatórios.</p>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-icon">A</div>
+                <h3>Auditável</h3>
+                <p>Rastreabilidade total de cada decisão. Saiba exatamente o que aconteceu e por quê.</p>
+            </div>
+            <div class="pillar-card">
+                <div class="pillar-icon">E</div>
+                <h3>Escalável</h3>
+                <p>Processe grandes volumes de dados com execução paralela otimizada.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="cycle-section">
+    <div class="container">
+        <h2 class="section-title">Casos de Uso</h2>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>Automação de Processos</h4>
+                <p>Automatize fluxos de trabalho complexos com precisão e confiabilidade.</p>
+            </div>
+            <div class="feature-item">
+                <h4>Processamento de Dados</h4>
+                <p>Transforme e processe dados em larga escala com resultados consistentes.</p>
+            </div>
+            <div class="feature-item">
+                <h4>Integração de Sistemas</h4>
+                <p>Conecte diferentes sistemas e APIs com uma linguagem unificada.</p>
+            </div>
+            <div class="feature-item">
+                <h4>Compliance e Auditoria</h4>
+                <p>Mantenha registros completos para conformidade regulatória.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="engine-section">
+    <div class="container">
+        <div class="engine-box">
+            <span class="badge">OPEN SOURCE</span>
+            <h2>HMP Engine</h2>
+            <p class="description">
+                Linguagem declarativa para automação. 
+                64 tools nativas para matemática, texto, HTTP, data e mais.
+            </p>
+            <div class="engine-features">
+                <div class="engine-feature">
+                    <div class="number">64</div>
+                    <div class="label">Tools Nativas</div>
+                </div>
+                <div class="engine-feature">
+                    <div class="number">11</div>
+                    <div class="label">Categorias</div>
+                </div>
+                <div class="engine-feature">
+                    <div class="number">REST</div>
+                    <div class="label">API Completa</div>
+                </div>
+            </div>
+            <div class="btn-group" style="margin-top: 40px;">
+                <a href="/engine" class="btn btn-primary">Documentação</a>
+                <a href="/api" class="btn btn-secondary">API REST</a>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

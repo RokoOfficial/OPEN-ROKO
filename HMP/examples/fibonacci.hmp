@@ -1,0 +1,29 @@
+# =============================================================================
+# Fibonacci - Sequencia de Fibonacci com WHILE
+# =============================================================================
+# Este exemplo demonstra:
+# - Loop WHILE para iteracao condicional
+# - Variaveis temporarias para swap
+# - Acumulacao de valores
+
+SET limite TO 100
+
+CALL log.print WITH message="Sequencia de Fibonacci ate ${limite}:"
+
+# Inicializa os dois primeiros numeros
+SET a TO 0
+SET b TO 1
+
+# Gera sequencia enquanto b < limite
+WHILE ${b} < ${limite}
+    CALL log.print WITH message=${b}
+    
+    # Swap: temp = b, b = a + b, a = temp
+    SET temp TO ${b}
+    SET b TO ${a + b}
+    SET a TO ${temp}
+ENDWHILE
+
+CALL log.print WITH message="Ultimo numero gerado: ${a}"
+
+RETURN ${a}

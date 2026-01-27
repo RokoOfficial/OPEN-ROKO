@@ -1,0 +1,27 @@
+# =============================================================================
+# Usando IMPORT - Exemplo de importação de módulos
+# =============================================================================
+# Este exemplo demonstra como importar funções de outro arquivo HMP
+
+# Importa funções do módulo de utilidades
+IMPORT "modulo_utilidades.hmp"
+
+# Usa a função importada
+SET numero TO 15
+CALL eh_positivo WITH numero=${numero}
+SET eh_pos TO ${last_result}
+CALL log.print WITH message="15 é positivo? ${eh_pos}"
+
+# Usa outra função importada
+CALL dobro WITH valor=10
+SET resultado TO ${last_result}
+CALL log.print WITH message="Dobro de 10: ${resultado}"
+
+# Usa função com lista
+SET numeros TO [10, 20, 30, 40, 50]
+CALL primeiro WITH lista=${numeros}
+SET prim TO ${last_result}
+CALL log.print WITH message="Primeiro elemento: ${prim}"
+
+# Retorna resultados
+RETURN {"positivo": ${eh_pos}, "dobro": ${resultado}, "primeiro": ${prim}}

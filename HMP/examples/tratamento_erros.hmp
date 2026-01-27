@@ -1,0 +1,61 @@
+# =============================================================================
+# Tratamento de Erros - TRY/CATCH
+# =============================================================================
+# Este exemplo demonstra:
+# - Blocos TRY/CATCH para captura de erros
+# - Variavel especial ${error}
+# - Fallback em caso de falha
+# - Validacao de dados
+
+CALL log.print WITH message="=== Demonstracao de Tratamento de Erros ==="
+
+# Exemplo 1: Divisao por zero
+CALL log.print WITH message="1. Tentando dividir por zero..."
+SET divisor TO 0
+
+TRY
+    CALL math.divide WITH a=100, b=${divisor}
+    SET resultado TO ${last_result}
+    CALL log.print WITH message="Resultado: ${resultado}"
+CATCH
+    CALL log.print WITH message="Erro capturado: ${error}"
+    SET resultado TO 0
+    CALL log.print WITH message="Usando valor padrao: ${resultado}"
+ENDTRY
+
+# Exemplo 2: HTTP com fallback
+CALL log.print WITH message="2. Simulando requisicao HTTP com fallback..."
+
+SET dados TO {}
+
+TRY
+    # Tenta API principal (vai falhar)
+    CALL log.print WITH message="Tentando API principal..."
+    # Simulando erro - URL invalida nao sera chamada em demo
+    SET dados TO {"fonte": "api_principal", "status": "ok"}
+CATCH
+    CALL log.print WITH message="API principal falhou, usando fallback"
+    SET dados TO {"fonte": "fallback", "status": "usando_cache"}
+ENDTRY
+
+CALL log.print WITH message="Dados obtidos: ${dados}"
+
+# Exemplo 3: Validacao de dados
+CALL log.print WITH message="3. Validacao de dados..."
+
+SET idade TO -5
+
+TRY
+    IF ${idade} < 0 THEN
+        # Simula um erro de validacao
+        CALL log.print WITH message="Idade invalida: ${idade}"
+        SET idade TO 0
+    ENDIF
+    CALL log.print WITH message="Idade validada: ${idade}"
+CATCH
+    CALL log.print WITH message="Erro na validacao: ${error}"
+ENDTRY
+
+CALL log.print WITH message="=== Fim da Demonstracao ==="
+
+RETURN {"resultado_divisao": ${resultado}, "dados": ${dados}, "idade": ${idade}}
