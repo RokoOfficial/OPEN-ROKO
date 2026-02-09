@@ -3,7 +3,7 @@
 import json
 import re
 import os
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence
 from pathlib import Path
 
 from hmp.core.context import ExecutionContext, HMPConfig
@@ -11,6 +11,22 @@ from hmp.tools.registry import ToolRegistry
 from hmp.expr.evaluator import safe_eval_expr
 from hmp.expr.cache import ExpressionCache
 from hmp.runtime.errors import HMPRuntimeError, HMPLimitError
+from hmp.parser.parser import Parser, HMPParseError
+from hmp.parser.ast import (
+    Program,
+    Statement,
+    SetStatement,
+    CallStatement,
+    ImportStatement,
+    ReturnStatement,
+    IfStatement,
+    LoopTimesStatement,
+    WhileStatement,
+    ForEachStatement,
+    FunctionDef,
+    TryCatchStatement,
+    ParallelStatement,
+)
 
 from hmp.tools.math_tools import MathToolProvider
 from hmp.tools.string_tools import StringToolProvider
@@ -99,13 +115,17 @@ class HMPEngine:
         }
         
         try:
-            lines = script.strip().split('\n')
-            self._register_functions(lines, context, result)
-            self._execute_lines(lines, context, result)
+            parser = Parser(script)
+            program = parser.parse()
+            self._register_functions_ast(program, context, result)
+            self._execute_program(program, context, result)
             result["variables"] = {
                 k: v for k, v in context.variables.items() 
                 if not k.startswith('_')
             }
+        except HMPParseError as e:
+            result["success"] = False
+            result["error"] = str(e)
         except HMPLimitError as e:
             result["success"] = False
             result["error"] = str(e)
@@ -118,104 +138,191 @@ class HMPEngine:
         
         return result
     
-    def _register_functions(
-        self, 
-        lines: List[str], 
-        context: ExecutionContext, 
+    def _register_functions_ast(
+        self,
+        program: Program,
+        context: ExecutionContext,
         result: Dict
     ) -> None:
-        """Registra funcoes definidas no script."""
-        i = 0
-        while i < len(lines):
-            line = lines[i].strip()
-            
-            if line.startswith('FUNCTION '):
-                match = re.match(r'FUNCTION\s+(\w+)\s*\(([^)]*)\)', line)
-                if match:
-                    func_name = match.group(1)
-                    params_str = match.group(2).strip()
-                    params = [p.strip() for p in params_str.split(',')] if params_str else []
-                    
-                    func_start = i + 1
-                    func_end = func_start
-                    depth = 1
-                    
-                    while func_end < len(lines) and depth > 0:
-                        current = lines[func_end].strip()
-                        if current.startswith('FUNCTION '):
-                            depth += 1
-                        elif current == 'ENDFUNCTION':
-                            depth -= 1
-                        func_end += 1
-                    
-                    context.functions[func_name] = {
-                        'params': params,
-                        'lines': lines[func_start:func_end-1]
-                    }
-                    result["output"].append(
-                        f"[FUNCTION] {func_name}({', '.join(params)}) definida"
-                    )
-            i += 1
+        """Registra funcoes definidas no script a partir da AST."""
+        for statement in program.statements:
+            if isinstance(statement, FunctionDef):
+                context.functions[statement.name] = {
+                    "params": statement.params,
+                    "body": statement.body,
+                }
+                result["output"].append(
+                    f"[FUNCTION] {statement.name}({', '.join(statement.params)}) definida"
+                )
     
-    def _execute_lines(
-        self, 
-        lines: List[str], 
-        context: ExecutionContext, 
+    def _execute_program(
+        self,
+        program: Program,
+        context: ExecutionContext,
         result: Dict
     ) -> None:
-        """Executa linhas do script."""
-        i = 0
-        while i < len(lines):
+        """Executa statements a partir da AST."""
+        self._execute_statements(program.statements, context, result, in_function=False)
+
+    def _execute_statements(
+        self,
+        statements: Sequence[Statement],
+        context: ExecutionContext,
+        result: Dict,
+        in_function: bool
+    ) -> Optional[Any]:
+        for statement in statements:
             context.increment_iteration()
             context.check_limits()
-            
-            line = lines[i].strip()
-            
-            if not line or line.startswith('#'):
-                i += 1
-                continue
-            
-            if line.startswith('FUNCTION '):
-                i += self._skip_block(lines, i, 'FUNCTION ', 'ENDFUNCTION') + 1
-                continue
-            
-            if line.startswith('IF ') and 'THEN' in line:
-                skip = self._handle_if(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line.startswith('LOOP ') and 'TIMES' in line:
-                skip = self._handle_loop(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line.startswith('WHILE '):
-                skip = self._handle_while(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line.startswith('FOR EACH '):
-                skip = self._handle_for_each(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line == 'TRY':
-                skip = self._handle_try(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line == 'PARALLEL':
-                skip = self._handle_parallel(lines, i, context, result)
-                i += skip + 1
-                continue
-            
-            if line.startswith('IMPORT '):
-                self._handle_import(line, context, result)
-                i += 1
-                continue
-            
-            self._process_line(line, context, result)
-            i += 1
+            returned = self._execute_statement(statement, context, result, in_function)
+            if in_function and returned is not None:
+                return returned
+        return None
+
+    def _execute_statement(
+        self,
+        statement: Statement,
+        context: ExecutionContext,
+        result: Dict,
+        in_function: bool
+    ) -> Optional[Any]:
+        if isinstance(statement, SetStatement):
+            value = self._parse_value(statement.value, context)
+            context.set_variable(statement.name, value)
+            result["output"].append(f"SET {statement.name} = {value}")
+            return None
+        if isinstance(statement, CallStatement):
+            self._execute_call(statement, context, result)
+            return None
+        if isinstance(statement, ImportStatement):
+            self._execute_import(statement, context, result)
+            return None
+        if isinstance(statement, ReturnStatement):
+            value = self._parse_value(statement.value, context)
+            result["return_value"] = value
+            result["output"].append(f"RETURN: {value}")
+            return value if in_function else None
+        if isinstance(statement, FunctionDef):
+            return None
+        if isinstance(statement, IfStatement):
+            condition = self._evaluate_expression(statement.condition, context)
+            context.push_frame('if')
+            try:
+                body = statement.body if condition else statement.else_body
+                returned = self._execute_statements(
+                    body, context, result, in_function=in_function
+                )
+                if in_function and returned is not None:
+                    return returned
+            finally:
+                context.pop_frame()
+            return None
+        if isinstance(statement, LoopTimesStatement):
+            count_value = self._parse_value(statement.count, context)
+            try:
+                count = int(count_value)
+            except (TypeError, ValueError):
+                count = 0
+            count = min(count, self.config.max_loop_iterations)
+            context.push_frame('loop')
+            try:
+                for i in range(count):
+                    context.check_limits()
+                    context.set_variable('_loop_index', i)
+                    context.set_variable('loop_index', i)
+                    returned = self._execute_statements(
+                        statement.body, context, result, in_function=in_function
+                    )
+                    if in_function and returned is not None:
+                        return returned
+            finally:
+                context.pop_frame()
+            return None
+        if isinstance(statement, WhileStatement):
+            context.push_frame('while')
+            try:
+                while self._evaluate_expression(statement.condition, context):
+                    context.check_limits()
+                    returned = self._execute_statements(
+                        statement.body, context, result, in_function=in_function
+                    )
+                    if in_function and returned is not None:
+                        return returned
+            finally:
+                context.pop_frame()
+            return None
+        if isinstance(statement, ForEachStatement):
+            items = self._parse_value(statement.iterable, context)
+            if not isinstance(items, list):
+                items = []
+            context.push_frame('for')
+            try:
+                for item in items:
+                    context.check_limits()
+                    context.set_variable(statement.var_name, item)
+                    returned = self._execute_statements(
+                        statement.body, context, result, in_function=in_function
+                    )
+                    if in_function and returned is not None:
+                        return returned
+            finally:
+                context.pop_frame()
+            return None
+        if isinstance(statement, TryCatchStatement):
+            context.push_frame('try')
+            try:
+                returned = self._execute_statements(
+                    statement.body, context, result, in_function=in_function
+                )
+                if in_function and returned is not None:
+                    return returned
+            except Exception as e:
+                context.set_variable('_error', str(e))
+                if statement.catch_body:
+                    returned = self._execute_statements(
+                        statement.catch_body, context, result, in_function=in_function
+                    )
+                    if in_function and returned is not None:
+                        return returned
+            finally:
+                context.pop_frame()
+            return None
+        if isinstance(statement, ParallelStatement):
+            context.push_frame('parallel')
+            try:
+                returned = self._execute_statements(
+                    statement.body, context, result, in_function=in_function
+                )
+                if in_function and returned is not None:
+                    return returned
+            finally:
+                context.pop_frame()
+            return None
+        return None
+
+    def _execute_call(
+        self,
+        statement: CallStatement,
+        context: ExecutionContext,
+        result: Dict
+    ) -> None:
+        """Processa comando CALL a partir da AST."""
+        params = {}
+        if statement.params:
+            params = self._parse_params(statement.params, context)
+
+        tool_name = statement.tool
+
+        if tool_name in context.functions:
+            tool_result = self._call_function(tool_name, params, context, result)
+        else:
+            tool_result = self.registry.execute(tool_name, params, context)
+
+        label = params.get('label', 'default')
+        context.last_result[label] = tool_result
+        context.last_result['_last'] = tool_result
+
+        result["output"].append(f"[CALL] {tool_name} -> {tool_result}")
     
     def _skip_block(
         self, 
@@ -321,21 +428,24 @@ class HMPEngine:
             for param_name in func['params']:
                 if param_name in params:
                     context.set_variable(param_name, params[param_name])
-            
+
+            if 'body' in func:
+                return self._execute_statements(func['body'], context, result, in_function=True)
+
             func_result = None
             for line in func['lines']:
                 context.check_limits()
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                
+
                 if line.startswith('RETURN '):
                     return_expr = line[7:].strip()
                     func_result = self._parse_value(return_expr, context)
                     break
                 else:
                     self._process_line(line, context, result)
-            
+
             return func_result
         finally:
             context.pop_frame()
@@ -370,40 +480,58 @@ class HMPEngine:
         
         filepath = match.group(1)
         namespace = match.group(2)
-        
+        self._execute_import(
+            ImportStatement(line=0, path=filepath, namespace=namespace),
+            context,
+            result,
+        )
+
+    def _execute_import(
+        self,
+        statement: ImportStatement,
+        context: ExecutionContext,
+        result: Dict
+    ) -> None:
+        """Importa funcoes de outro modulo HMP."""
         try:
-            script_content = self._load_module(filepath)
+            script_content = self._load_module(statement.path)
             if script_content is None:
-                result["output"].append(f"[IMPORT] Erro: arquivo '{filepath}' nao encontrado")
+                result["output"].append(
+                    f"[IMPORT] Erro: arquivo '{statement.path}' nao encontrado"
+                )
                 return
-            
+
             imported_engine = HMPEngine(
                 config=self.config,
                 registry=self.registry,
                 cache=self.cache,
-                script_path=os.path.dirname(filepath)
+                script_path=os.path.dirname(statement.path)
             )
-            
-            imported_lines = script_content.strip().split('\n')
+
             temp_context = ExecutionContext(
                 registry=self.registry,
                 cache=self.cache,
                 config=self.config
             )
             temp_result = {"output": []}
-            imported_engine._register_functions(imported_lines, temp_context, temp_result)
-            
-            if namespace:
+            parser = Parser(script_content)
+            program = parser.parse()
+            imported_engine._register_functions_ast(program, temp_context, temp_result)
+
+            if statement.namespace:
                 for func_name, func_def in temp_context.functions.items():
-                    full_name = f"{namespace}.{func_name}"
+                    full_name = f"{statement.namespace}.{func_name}"
                     context.functions[full_name] = func_def
-                result["output"].append(f"[IMPORT] Modulo '{filepath}' importado como '{namespace}'")
+                result["output"].append(
+                    f"[IMPORT] Modulo '{statement.path}' importado como '{statement.namespace}'"
+                )
             else:
                 context.functions.update(temp_context.functions)
-                result["output"].append(f"[IMPORT] Modulo '{filepath}' importado")
-        
+                result["output"].append(f"[IMPORT] Modulo '{statement.path}' importado")
         except Exception as e:
-            result["output"].append(f"[IMPORT] Erro ao carregar '{filepath}': {str(e)}")
+            result["output"].append(
+                f"[IMPORT] Erro ao carregar '{statement.path}': {str(e)}"
+            )
     
     def _load_module(self, filepath: str) -> Optional[str]:
         """Carrega conteudo de um arquivo HMP."""

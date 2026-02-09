@@ -107,12 +107,12 @@ def cmd_validate(args: argparse.Namespace) -> int:
         print(f"Erro ao ler arquivo: {e}")
         return 1
     
-    from hmp.parser.tokenizer import Tokenizer
+    from hmp.parser.parser import Parser
     
     try:
-        tokenizer = Tokenizer(script)
-        tokens = tokenizer.tokenize()
-        print(f"Validacao OK: {len(tokens)} tokens encontrados")
+        parser = Parser(script)
+        program = parser.parse()
+        print(f"Validacao OK: {len(program.statements)} statements encontrados")
         return 0
     except Exception as e:
         print(f"Erro de sintaxe: {e}")
