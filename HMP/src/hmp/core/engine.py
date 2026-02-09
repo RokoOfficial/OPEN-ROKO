@@ -278,10 +278,10 @@ class HMPEngine:
                 context.pop_frame()
             return None
         if isinstance(statement, ForEachStatement):
-            items = self._parse_value(statement.iterable, context)
+            items = self._parse_value(statement.items, context)
             if not isinstance(items, list):
                 items = []
-            context.push_frame('for')
+            context.push_frame('foreach')
             try:
                 for item in items:
                     context.check_limits()
@@ -295,7 +295,6 @@ class HMPEngine:
                 context.pop_frame()
             return None
         if isinstance(statement, TryCatchStatement):
-            context.push_frame('try')
             try:
                 returned = self._execute_statements(
                     statement.body, context, result, in_function=in_function
@@ -303,27 +302,27 @@ class HMPEngine:
                 if in_function and returned is not None:
                     return returned
             except Exception as e:
-                context.set_variable('_error', str(e))
-                if statement.catch_body:
+                context.push_frame('catch')
+                try:
+                    context.set_variable(statement.error_var, str(e))
                     returned = self._execute_statements(
                         statement.catch_body, context, result, in_function=in_function
                     )
                     if in_function and returned is not None:
                         return returned
-            finally:
-                context.pop_frame()
+                finally:
+                    context.pop_frame()
             return None
         if isinstance(statement, ParallelStatement):
-            context.push_frame('parallel')
-            try:
-                returned = self._execute_statements(
-                    statement.body, context, result, in_function=in_function
-                )
-                if in_function and returned is not None:
-                    return returned
-            finally:
-                context.pop_frame()
+            # Execucao sequencial para manter determinismo no motor base
+            # Extensoes podem implementar paralelismo real
+            returned = self._execute_statements(
+                statement.body, context, result, in_function=in_function
+            )
+            if in_function and returned is not None:
+                return returned
             return None
+        
         return None
 
     def _execute_call(
@@ -331,186 +330,40 @@ class HMPEngine:
         statement: CallStatement,
         context: ExecutionContext,
         result: Dict
-    ) -> None:
-        """Processa comando CALL a partir da AST."""
-        params = {}
-        if statement.params:
-            params = self._parse_params(statement.params, context)
-
-        tool_name = statement.tool
-
-        if tool_name in context.functions:
-            tool_result = self._call_function(tool_name, params, context, result)
-        else:
-            tool_result = self.registry.execute(tool_name, params, context)
-
-        label = params.get('label', 'default')
-        context.last_result[label] = tool_result
-        context.last_result['_last'] = tool_result
-
-        result["output"].append(f"[CALL] {tool_name} -> {tool_result}")
-    
-    def _skip_block(
-        self, 
-        lines: List[str], 
-        start: int, 
-        start_keyword: str, 
-        end_keyword: str
-    ) -> int:
-        """Pula um bloco de codigo."""
-        i = start + 1
-        depth = 1
-        while i < len(lines) and depth > 0:
-            line = lines[i].strip()
-            if line.startswith(start_keyword):
-                depth += 1
-            elif line == end_keyword:
-                depth -= 1
-            i += 1
-        return i - start - 1
-    
-    def _process_line(
-        self, 
-        line: str, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> None:
-        """Processa uma linha individual."""
-        context.increment_iteration()
-        context.check_limits()
-        
-        line = line.strip()
-        if not line or line.startswith('#'):
-            return
-        
-        if line.startswith('SET '):
-            self._handle_set(line, context, result)
-        elif line.startswith('CALL '):
-            self._handle_call(line, context, result)
-        elif line.startswith('RETURN '):
-            self._handle_return(line, context, result)
-    
-    def _handle_set(
-        self, 
-        line: str, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> None:
-        """Processa comando SET."""
-        match = re.match(r'SET\s+(\w+)\s+TO\s+(.+)', line)
-        if match:
-            var_name = match.group(1)
-            value_str = match.group(2)
-            value = self._parse_value(value_str, context)
-            context.set_variable(var_name, value)
-            result["output"].append(f"SET {var_name} = {value}")
-    
-    def _handle_call(
-        self, 
-        line: str, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> None:
-        """Processa comando CALL."""
-        match = re.match(r'CALL\s+([\w.]+)\s+WITH\s+(.+)', line)
-        if not match:
-            match = re.match(r'CALL\s+([\w.]+)', line)
-            if match:
-                tool_name = match.group(1)
-                params = {}
-            else:
-                return
-        else:
-            tool_name = match.group(1)
-            params_str = match.group(2)
-            params = self._parse_params(params_str, context)
-        
-        if tool_name in context.functions:
-            tool_result = self._call_function(tool_name, params, context, result)
-        else:
-            tool_result = self.registry.execute(tool_name, params, context)
-        
-        label = params.get('label', 'default')
-        context.last_result[label] = tool_result
-        context.last_result['_last'] = tool_result
-        
-        result["output"].append(f"[CALL] {tool_name} -> {tool_result}")
-    
-    def _call_function(
-        self, 
-        func_name: str, 
-        params: Dict, 
-        context: ExecutionContext, 
-        result: Dict
     ) -> Any:
-        """Executa uma funcao definida pelo usuario."""
-        if func_name not in context.functions:
-            return {"error": f"Funcao {func_name} nao encontrada"}
-        
-        context.push_frame(func_name, context.variables.copy())
-        try:
-            func = context.functions[func_name]
+        # Verifica se e uma funcao definida no script
+        if statement.name in context.functions:
+            func = context.functions[statement.name]
+            params = func["params"]
+            body = func["body"]
             
-            for param_name in func['params']:
-                if param_name in params:
-                    context.set_variable(param_name, params[param_name])
-
-            if 'body' in func:
-                return self._execute_statements(func['body'], context, result, in_function=True)
-
-            func_result = None
-            for line in func['lines']:
-                context.check_limits()
-                line = line.strip()
-                if not line or line.startswith('#'):
-                    continue
-
-                if line.startswith('RETURN '):
-                    return_expr = line[7:].strip()
-                    func_result = self._parse_value(return_expr, context)
-                    break
+            # Prepara argumentos
+            args = {}
+            for i, param_name in enumerate(params):
+                if i < len(statement.args):
+                    args[param_name] = self._parse_value(statement.args[i], context)
                 else:
-                    self._process_line(line, context, result)
-
-            return func_result
-        finally:
-            context.pop_frame()
-    
-    def _handle_return(
-        self, 
-        line: str, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> None:
-        """Processa comando RETURN."""
-        return_expr = line[7:].strip()
-        result["return_value"] = self._parse_value(return_expr, context)
-        result["output"].append(f"RETURN: {result['return_value']}")
-    
-    def _handle_import(
-        self,
-        line: str,
-        context: ExecutionContext,
-        result: Dict
-    ) -> None:
-        """Processa comando IMPORT."""
-        # IMPORT "arquivo.hmp"
-        # IMPORT "arquivo.hmp" AS modulo
-        match = re.match(r'IMPORT\s+"([^"]+)"\s*(?:AS\s+(\w+))?', line)
-        if not match:
-            match = re.match(r"IMPORT\s+'([^']+)'\s*(?:AS\s+(\w+))?", line)
+                    args[param_name] = None
+            
+            # Executa corpo da funcao em novo frame
+            context.push_frame(statement.name, args)
+            try:
+                return self._execute_statements(body, context, result, in_function=True)
+            finally:
+                context.pop_frame()
         
-        if not match:
-            result["output"].append("[IMPORT] Sintaxe invalida")
-            return
-        
-        filepath = match.group(1)
-        namespace = match.group(2)
-        self._execute_import(
-            ImportStatement(line=0, path=filepath, namespace=namespace),
-            context,
-            result,
-        )
+        # Caso contrario, tenta executar como tool
+        args = [self._parse_value(arg, context) for arg in statement.args]
+        try:
+            val = context.registry.execute(statement.name, args, context)
+            if statement.target:
+                context.set_variable(statement.target, val)
+                result["output"].append(f"CALL {statement.name} -> {statement.target} = {val}")
+            else:
+                result["output"].append(f"CALL {statement.name} -> {val}")
+            return val
+        except Exception as e:
+            raise HMPRuntimeError(f"Erro ao chamar tool '{statement.name}': {str(e)}")
 
     def _execute_import(
         self,
@@ -518,477 +371,48 @@ class HMPEngine:
         context: ExecutionContext,
         result: Dict
     ) -> None:
-        """Importa funcoes de outro modulo HMP."""
-        try:
-            script_content = self._load_module(statement.path)
-            if script_content is None:
-                result["output"].append(
-                    f"[IMPORT] Erro: arquivo '{statement.path}' nao encontrado"
-                )
-                return
-
-            imported_engine = HMPEngine(
-                config=self.config,
-                registry=self.registry,
-                cache=self.cache,
-                script_path=os.path.dirname(statement.path)
-            )
-
-            temp_context = ExecutionContext(
-                registry=self.registry,
-                cache=self.cache,
-                config=self.config
-            )
-            temp_result = {"output": []}
-            parser = Parser(script_content)
-            program = parser.parse()
-            imported_engine._register_functions_ast(program, temp_context, temp_result)
-
-            if statement.namespace:
-                for func_name, func_def in temp_context.functions.items():
-                    full_name = f"{statement.namespace}.{func_name}"
-                    context.functions[full_name] = func_def
-                result["output"].append(
-                    f"[IMPORT] Modulo '{statement.path}' importado como '{statement.namespace}'"
-                )
-            else:
-                context.functions.update(temp_context.functions)
-                result["output"].append(f"[IMPORT] Modulo '{statement.path}' importado")
-        except Exception as e:
-            result["output"].append(
-                f"[IMPORT] Erro ao carregar '{statement.path}': {str(e)}"
-            )
-    
-    def _load_module(self, filepath: str) -> Optional[str]:
-        """Carrega conteudo de um arquivo HMP."""
-        try:
-            # Tentar caminhos possíveis
-            possible_paths = [
-                filepath,
-                os.path.join(self.script_path, filepath),
-                os.path.join(os.getcwd(), filepath),
-                os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'examples', os.path.basename(filepath))
-            ]
+        module_name = statement.module
+        if module_name in self._imported_modules:
+            return
             
-            abs_path = None
-            for path in possible_paths:
-                if os.path.exists(path):
-                    abs_path = os.path.abspath(path)
-                    break
-            
-            if abs_path is None or abs_path in self._imported_modules:
-                return None
-            
-            self._imported_modules.add(abs_path)
-            
-            with open(abs_path, 'r', encoding='utf-8') as f:
-                return f.read()
+        # Tenta carregar modulo do sistema de arquivos
+        possible_paths = [
+            Path(self.script_path) / f"{module_name}.hmp",
+            Path(self.script_path) / "modules" / f"{module_name}.hmp",
+            Path(__file__).parent.parent / "stdlib" / f"{module_name}.hmp"
+        ]
         
-        except Exception:
-            return None
-    
-    def _handle_if(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco IF."""
-        line = lines[start].strip()
-        match = re.match(r'IF\s+(.+)\s+THEN', line)
-        if not match:
-            return 0
+        content = None
+        for p in possible_paths:
+            if p.exists():
+                content = p.read_text()
+                break
         
-        condition_expr = match.group(1)
-        condition = self._evaluate_expression(condition_expr, context)
-        
-        endif_idx = start + 1
-        else_idx = -1
-        depth = 1
-        
-        while endif_idx < len(lines) and depth > 0:
-            current = lines[endif_idx].strip()
-            if current.startswith('IF ') and 'THEN' in current:
-                depth += 1
-            elif current == 'ENDIF':
-                depth -= 1
-            elif current == 'ELSE' and depth == 1:
-                else_idx = endif_idx
-            endif_idx += 1
-        
-        context.push_frame('if')
-        try:
-            if condition:
-                end = else_idx if else_idx > 0 else endif_idx - 1
-                for i in range(start + 1, end):
-                    context.check_limits()
-                    self._process_line(lines[i], context, result)
-            else:
-                if else_idx > 0:
-                    for i in range(else_idx + 1, endif_idx - 1):
-                        context.check_limits()
-                        self._process_line(lines[i], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endif_idx - start - 1
-    
-    def _handle_loop(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco LOOP."""
-        line = lines[start].strip()
-        match = re.match(r'LOOP\s+(\d+)\s+TIMES', line)
-        if not match:
-            return 0
-        
-        count = min(int(match.group(1)), self.config.max_loop_iterations)
-        
-        endloop_idx = start + 1
-        depth = 1
-        while endloop_idx < len(lines) and depth > 0:
-            current = lines[endloop_idx].strip()
-            if current.startswith('LOOP ') and 'TIMES' in current:
-                depth += 1
-            elif current == 'ENDLOOP':
-                depth -= 1
-            endloop_idx += 1
-        
-        context.push_frame('loop')
-        try:
-            for i in range(count):
-                context.check_limits()
-                context.set_variable('_loop_index', i)
-                context.set_variable('loop_index', i)
-                for j in range(start + 1, endloop_idx - 1):
-                    context.check_limits()
-                    self._process_line(lines[j], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endloop_idx - start - 1
-    
-    def _handle_while(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco WHILE."""
-        line = lines[start].strip()
-        match = re.match(r'WHILE\s+(.+)', line)
-        if not match:
-            return 0
-        
-        condition_expr = match.group(1)
-        
-        endwhile_idx = start + 1
-        depth = 1
-        while endwhile_idx < len(lines) and depth > 0:
-            current = lines[endwhile_idx].strip()
-            if current.startswith('WHILE '):
-                depth += 1
-            elif current == 'ENDWHILE':
-                depth -= 1
-            endwhile_idx += 1
-        
-        iteration = 0
-        context.push_frame('while')
-        try:
-            while True:
-                context.check_limits()
-                
-                condition = self._evaluate_expression(condition_expr, context)
-                if not condition:
-                    break
-                
-                iteration += 1
-                if iteration > self.config.max_while_iterations:
-                    result["output"].append(
-                        f"[WHILE] Limite de {self.config.max_while_iterations} iteracoes atingido"
-                    )
-                    break
-                
-                context.set_variable('_loop_index', iteration - 1)
-                context.set_variable('loop_index', iteration - 1)
-                for j in range(start + 1, endwhile_idx - 1):
-                    context.check_limits()
-                    self._process_line(lines[j], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endwhile_idx - start - 1
-    
-    def _handle_for_each(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco FOR EACH."""
-        line = lines[start].strip()
-        match = re.match(r'FOR EACH\s+(\w+)\s+IN\s+(.+)', line)
-        if not match:
-            return 0
-        
-        item_var = match.group(1)
-        list_expr = match.group(2).strip()
-        
-        items = self._parse_value(list_expr, context)
-        if not isinstance(items, (list, tuple)):
-            return 0
-        
-        endfor_idx = start + 1
-        depth = 1
-        while endfor_idx < len(lines) and depth > 0:
-            current = lines[endfor_idx].strip()
-            if current.startswith('FOR EACH '):
-                depth += 1
-            elif current == 'ENDFOR':
-                depth -= 1
-            endfor_idx += 1
-        
-        context.push_frame('for_each')
-        try:
-            for idx, item in enumerate(items):
-                context.check_limits()
-                context.set_variable(item_var, item)
-                context.set_variable('_loop_index', idx)
-                context.set_variable('loop_index', idx)
-                for j in range(start + 1, endfor_idx - 1):
-                    context.check_limits()
-                    self._process_line(lines[j], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endfor_idx - start - 1
-    
-    def _handle_try(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco TRY/CATCH."""
-        endtry_idx = start + 1
-        catch_idx = -1
-        depth = 1
-        
-        while endtry_idx < len(lines) and depth > 0:
-            current = lines[endtry_idx].strip()
-            if current == 'TRY':
-                depth += 1
-            elif current == 'CATCH' and depth == 1:
-                catch_idx = endtry_idx
-            elif current == 'ENDTRY':
-                depth -= 1
-            endtry_idx += 1
-        
-        context.push_frame('try')
-        try:
-            end_try_block = catch_idx if catch_idx > 0 else endtry_idx - 1
-            for j in range(start + 1, end_try_block):
-                context.check_limits()
-                self._process_line(lines[j], context, result)
-        except Exception as e:
-            if catch_idx > 0:
-                context.set_variable('_error', str(e))
-                for j in range(catch_idx + 1, endtry_idx - 1):
-                    context.check_limits()
-                    self._process_line(lines[j], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endtry_idx - start - 1
-    
-    def _handle_parallel(
-        self, 
-        lines: List[str], 
-        start: int, 
-        context: ExecutionContext, 
-        result: Dict
-    ) -> int:
-        """Processa bloco PARALLEL."""
-        endparallel_idx = start + 1
-        depth = 1
-        
-        while endparallel_idx < len(lines) and depth > 0:
-            current = lines[endparallel_idx].strip()
-            if current == 'PARALLEL':
-                depth += 1
-            elif current == 'ENDPARALLEL':
-                depth -= 1
-            endparallel_idx += 1
-        
-        context.push_frame('parallel')
-        try:
-            for j in range(start + 1, endparallel_idx - 1):
-                context.check_limits()
-                self._process_line(lines[j], context, result)
-        finally:
-            context.pop_frame()
-        
-        return endparallel_idx - start - 1
-    
-    def _evaluate_expression(
-        self, 
-        expr: str, 
-        context: ExecutionContext
-    ) -> Any:
-        """Avalia uma expressao que pode conter ${...}."""
-        eval_vars = context.variables.copy()
-        eval_vars['last_result'] = context.last_result
-        eval_vars['loop_index'] = context.get_variable('_loop_index', 0)
-        
-        if expr.startswith('${') and expr.endswith('}') and expr.count('${') == 1:
-            inner = expr[2:-1]
+        if content:
             try:
-                return safe_eval_expr(inner, eval_vars, self.cache)
+                parser = Parser(content)
+                program = parser.parse()
+                self._register_functions_ast(program, context, result)
+                self._imported_modules.add(module_name)
+                result["output"].append(f"IMPORT {module_name} sucesso")
+            except Exception as e:
+                raise HMPRuntimeError(f"Erro ao importar modulo '{module_name}': {str(e)}")
+        else:
+            # Tenta carregar como provider nativo se existir
+            try:
+                # Logica para carregar providers dinamicos se necessario
+                result["output"].append(f"IMPORT {module_name} (nativo) ignorado")
             except Exception:
-                return expr
-        
-        if '${' in expr:
-            def replace_var(match):
-                var_expr = match.group(1)
-                try:
-                    return str(safe_eval_expr(var_expr, eval_vars, self.cache))
-                except Exception:
-                    return match.group(0)
-            
-            processed = re.sub(r'\$\{([^}]+)\}', replace_var, expr)
-            
-            try:
-                return safe_eval_expr(processed, eval_vars, self.cache)
-            except Exception:
-                return processed
-        
-        try:
-            return safe_eval_expr(expr, eval_vars, self.cache)
-        except Exception:
-            return expr
-    
-    def _interpolate_string(
-        self,
-        text: str,
-        context: ExecutionContext
-    ) -> str:
-        """Interpola expressoes ${...} dentro de uma string."""
-        import re
-        
-        def replace_expr(match):
-            expr = match.group(0)
-            result = self._evaluate_expression(expr, context)
-            return str(result) if result != expr else expr
-        
-        pattern = r'\$\{[^}]+\}'
-        return re.sub(pattern, replace_expr, text)
-    
-    def _parse_value(
-        self, 
-        value_str: str, 
-        context: ExecutionContext
-    ) -> Any:
-        """Converte string de valor para tipo Python."""
-        value_str = value_str.strip()
-        
-        if value_str.startswith('${') and value_str.endswith('}'):
-            return self._evaluate_expression(value_str, context)
-        
-        if (value_str.startswith('"') and value_str.endswith('"')) or \
-           (value_str.startswith("'") and value_str.endswith("'")):
-            inner = value_str[1:-1]
-            if '${' in inner:
-                return self._interpolate_string(inner, context)
-            return inner
-        
-        if value_str.lstrip('-').isdigit():
-            return int(value_str)
-        
-        try:
-            return float(value_str)
-        except ValueError:
-            pass
-        
-        if value_str.lower() == 'true':
-            return True
-        if value_str.lower() == 'false':
-            return False
-        
-        if value_str.startswith('[') and value_str.endswith(']'):
-            try:
-                return json.loads(value_str)
-            except json.JSONDecodeError:
-                pass
-        
-        if value_str.startswith('{') and value_str.endswith('}'):
-            try:
-                return json.loads(value_str)
-            except json.JSONDecodeError:
-                pass
-        
-        if value_str in context.variables:
-            return context.get_variable(value_str)
-        
-        return value_str
-    
-    def _parse_params(
-        self, 
-        params_str: str, 
-        context: ExecutionContext
-    ) -> Dict:
-        """Parse dos parametros WITH - respeita strings com virgulas."""
-        params = {}
-        
-        parts = []
-        current = ""
-        in_string = False
-        string_char = None
-        in_brackets = 0
-        in_braces = 0
-        
-        for char in params_str:
-            if char in ('"', "'") and not in_string:
-                in_string = True
-                string_char = char
-                current += char
-            elif char == string_char and in_string:
-                in_string = False
-                string_char = None
-                current += char
-            elif char == '[' and not in_string:
-                in_brackets += 1
-                current += char
-            elif char == ']' and not in_string:
-                in_brackets -= 1
-                current += char
-            elif char == '{' and not in_string:
-                in_braces += 1
-                current += char
-            elif char == '}' and not in_string:
-                in_braces -= 1
-                current += char
-            elif char == ',' and not in_string and in_brackets == 0 and in_braces == 0:
-                parts.append(current.strip())
-                current = ""
-            else:
-                current += char
-        
-        if current.strip():
-            parts.append(current.strip())
-        
-        for part in parts:
-            if '=' in part:
-                key, val = part.split('=', 1)
-                key = key.strip()
-                val = self._parse_value(val.strip(), context)
-                params[key] = val
-        
-        return params
+                raise HMPRuntimeError(f"Modulo '{module_name}' nao encontrado")
+
+    def _parse_value(self, value: Any, context: ExecutionContext) -> Any:
+        if isinstance(value, str) and value.startswith('$'):
+            var_name = value[1:]
+            return context.get_variable(var_name)
+        if isinstance(value, str) and (value.startswith('{{') and value.endswith('}}')):
+            expr = value[2:-2].strip()
+            return self._evaluate_expression(expr, context)
+        return value
+
+    def _evaluate_expression(self, expr: str, context: ExecutionContext) -> Any:
+        return safe_eval_expr(expr, context.variables, self.cache)
