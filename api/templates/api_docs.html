@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+
+{% block title %}API REST - HMP{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>API REST</h1>
+        <p>Execute scripts HMP via HTTP</p>
+    </div>
+</section>
+
+<section class="content-section">
+    <div class="container">
+        <div class="engine-box" style="margin-bottom: 50px;">
+            <span class="badge">v2.0.0</span>
+            <h2 style="color: var(--secondary);">HMP API</h2>
+            <p>Execute scripts, gerencie arquivos e chame tools via HTTP</p>
+        </div>
+
+        <h2>Endpoints Principais</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: var(--dark-light);">
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Método</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Endpoint</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>GET</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/api/info</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Health check e informações</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>GET</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/tools</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Lista todas as 64 tools</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>POST</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/run</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Executa script HMP inline</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>POST</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/tool/&lt;nome&gt;</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Executa tool diretamente</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Gerenciamento de Arquivos</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: var(--dark-light);">
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Método</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Endpoint</th>
+                    <th style="padding: 15px; text-align: left; border-bottom: 1px solid var(--gray);">Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>GET</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/files</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Lista arquivos .hmp</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>POST</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/files/upload</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Upload de arquivo HMP</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>GET</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/files/&lt;nome&gt;</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Conteúdo do arquivo</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>PUT</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/files/&lt;nome&gt;</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Atualiza arquivo</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>DELETE</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/files/&lt;nome&gt;</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Remove arquivo</td>
+                </tr>
+                <tr>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>POST</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);"><code>/run/file/&lt;nome&gt;</code></td>
+                    <td style="padding: 15px; border-bottom: 1px solid rgba(255,255,255,0.1);">Executa arquivo HMP</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <h2>Exemplos</h2>
+
+        <h3>Executar Script</h3>
+        <pre class="code-block">curl -X POST https://sua-api.replit.app/run \
+  -H "Content-Type: application/json" \
+  -d '{"script": "SET x TO 10\nCALL math.sum WITH a=${x}, b=5"}'</pre>
+
+        <h3>Chamar Tool</h3>
+        <pre class="code-block">curl -X POST https://sua-api.replit.app/tool/math.sum \
+  -H "Content-Type: application/json" \
+  -d '{"a": 10, "b": 5}'</pre>
+
+        <h3>Upload de Arquivo</h3>
+        <pre class="code-block">curl -X POST https://sua-api.replit.app/files/upload \
+  -H "Content-Type: application/json" \
+  -d '{
+    "filename": "meu_script.hmp",
+    "content": "SET x TO 42\nRETURN ${x * 2}"
+  }'</pre>
+
+        <h3>Executar Arquivo</h3>
+        <pre class="code-block">curl -X POST https://sua-api.replit.app/run/file/meu_script.hmp \
+  -H "Content-Type: application/json" \
+  -d '{}'</pre>
+
+        <h2>Endpoints Rápidos</h2>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>GET /math/sum</h4>
+                <p><code>?a=10&b=5</code> retorna 15</p>
+            </div>
+            <div class="feature-item">
+                <h4>GET /date/now</h4>
+                <p>Data/hora atual ISO</p>
+            </div>
+            <div class="feature-item">
+                <h4>GET /random/number</h4>
+                <p><code>?min=1&max=100</code></p>
+            </div>
+            <div class="feature-item">
+                <h4>POST /crypto/hash</h4>
+                <p>Gera hash SHA256</p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 50px;">
+            <a href="/engine" class="btn btn-secondary">HMP Engine</a>
+            <a href="/" class="btn btn-primary">Início</a>
+        </div>
+    </div>
+</section>
+{% endblock %}

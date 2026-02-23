@@ -1,0 +1,49 @@
+# =============================================================================
+# Lista de Compras - Operacoes com listas
+# =============================================================================
+# Este exemplo demonstra:
+# - Criacao e manipulacao de listas
+# - Loop FOR EACH para iteracao
+# - Condicionais IF/ELSE
+# - Tools de lista (push, length, contains)
+
+CALL log.print WITH message="=== Sistema de Lista de Compras ==="
+
+# Inicializa lista de compras
+SET compras TO ["leite", "pao", "ovos"]
+CALL log.print WITH message="Lista inicial: ${compras}"
+
+# Adiciona mais itens
+CALL list.push WITH list=${compras}, item="queijo"
+SET compras TO ${last_result}
+
+CALL list.push WITH list=${compras}, item="manteiga"
+SET compras TO ${last_result}
+
+CALL log.print WITH message="Apos adicionar itens: ${compras}"
+
+# Verifica quantidade de itens
+CALL list.length WITH list=${compras}
+SET total TO ${last_result}
+CALL log.print WITH message="Total de itens: ${total}"
+
+# Verifica se um item esta na lista
+SET item_busca TO "ovos"
+CALL list.contains WITH list=${compras}, item=${item_busca}
+SET encontrado TO ${last_result}
+
+IF ${encontrado} == true THEN
+    CALL log.print WITH message="${item_busca} esta na lista!"
+ELSE
+    CALL log.print WITH message="${item_busca} NAO esta na lista"
+ENDIF
+
+# Exibe lista formatada
+CALL log.print WITH message="--- Lista de Compras ---"
+SET numero TO 0
+FOR EACH item IN ${compras}
+    SET numero TO ${numero + 1}
+    CALL log.print WITH message="${numero}. ${item}"
+ENDFOR
+
+RETURN {"itens": ${compras}, "total": ${total}}

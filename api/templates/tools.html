@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block title %}Tools HMP{% endblock %}
+
+{% block content %}
+<section class="page-header">
+    <div class="container">
+        <h1>64 Tools Nativas</h1>
+        <p>Referência completa de todas as tools</p>
+    </div>
+</section>
+
+<section class="content-section">
+    <div class="container">
+        <h2>math (13 tools)</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: var(--dark-light);">
+                    <th style="padding: 12px; text-align: left;">Tool</th>
+                    <th style="padding: 12px; text-align: left;">Parâmetros</th>
+                    <th style="padding: 12px; text-align: left;">Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 12px;"><code>math.sum</code></td><td>a, b</td><td>Soma dois números</td></tr>
+                <tr><td style="padding: 12px;"><code>math.subtract</code></td><td>a, b</td><td>Subtrai b de a</td></tr>
+                <tr><td style="padding: 12px;"><code>math.multiply</code></td><td>a, b</td><td>Multiplica dois números</td></tr>
+                <tr><td style="padding: 12px;"><code>math.divide</code></td><td>a, b</td><td>Divide a por b</td></tr>
+                <tr><td style="padding: 12px;"><code>math.power</code></td><td>base, exp</td><td>Potenciação</td></tr>
+                <tr><td style="padding: 12px;"><code>math.sqrt</code></td><td>n</td><td>Raiz quadrada</td></tr>
+                <tr><td style="padding: 12px;"><code>math.abs</code></td><td>n</td><td>Valor absoluto</td></tr>
+                <tr><td style="padding: 12px;"><code>math.round</code></td><td>n, decimals</td><td>Arredonda</td></tr>
+                <tr><td style="padding: 12px;"><code>math.floor</code></td><td>n</td><td>Arredonda para baixo</td></tr>
+                <tr><td style="padding: 12px;"><code>math.ceil</code></td><td>n</td><td>Arredonda para cima</td></tr>
+                <tr><td style="padding: 12px;"><code>math.min</code></td><td>a, b</td><td>Menor valor</td></tr>
+                <tr><td style="padding: 12px;"><code>math.max</code></td><td>a, b</td><td>Maior valor</td></tr>
+                <tr><td style="padding: 12px;"><code>math.mod</code></td><td>a, b</td><td>Resto da divisão</td></tr>
+            </tbody>
+        </table>
+
+        <h2>string (16 tools)</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: var(--dark-light);">
+                    <th style="padding: 12px; text-align: left;">Tool</th>
+                    <th style="padding: 12px; text-align: left;">Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 12px;"><code>string.upper</code></td><td>Converte para maiúsculas</td></tr>
+                <tr><td style="padding: 12px;"><code>string.lower</code></td><td>Converte para minúsculas</td></tr>
+                <tr><td style="padding: 12px;"><code>string.trim</code></td><td>Remove espaços</td></tr>
+                <tr><td style="padding: 12px;"><code>string.concat</code></td><td>Concatena strings</td></tr>
+                <tr><td style="padding: 12px;"><code>string.split</code></td><td>Divide string</td></tr>
+                <tr><td style="padding: 12px;"><code>string.join</code></td><td>Junta lista em string</td></tr>
+                <tr><td style="padding: 12px;"><code>string.replace</code></td><td>Substitui texto</td></tr>
+                <tr><td style="padding: 12px;"><code>string.substring</code></td><td>Extrai parte</td></tr>
+                <tr><td style="padding: 12px;"><code>string.length</code></td><td>Tamanho da string</td></tr>
+                <tr><td style="padding: 12px;"><code>string.contains</code></td><td>Verifica se contém</td></tr>
+                <tr><td style="padding: 12px;"><code>string.startswith</code></td><td>Verifica início</td></tr>
+                <tr><td style="padding: 12px;"><code>string.endswith</code></td><td>Verifica fim</td></tr>
+                <tr><td style="padding: 12px;"><code>string.repeat</code></td><td>Repete N vezes</td></tr>
+                <tr><td style="padding: 12px;"><code>string.reverse</code></td><td>Inverte string</td></tr>
+                <tr><td style="padding: 12px;"><code>string.pad_left</code></td><td>Preenche esquerda</td></tr>
+                <tr><td style="padding: 12px;"><code>string.pad_right</code></td><td>Preenche direita</td></tr>
+            </tbody>
+        </table>
+
+        <h2>list (13 tools)</h2>
+        <table style="width: 100%; border-collapse: collapse; margin: 20px 0;">
+            <thead>
+                <tr style="background: var(--dark-light);">
+                    <th style="padding: 12px; text-align: left;">Tool</th>
+                    <th style="padding: 12px; text-align: left;">Descrição</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr><td style="padding: 12px;"><code>list.push</code></td><td>Adiciona ao final</td></tr>
+                <tr><td style="padding: 12px;"><code>list.pop</code></td><td>Remove do final</td></tr>
+                <tr><td style="padding: 12px;"><code>list.get</code></td><td>Obtém por índice</td></tr>
+                <tr><td style="padding: 12px;"><code>list.set</code></td><td>Define por índice</td></tr>
+                <tr><td style="padding: 12px;"><code>list.length</code></td><td>Tamanho da lista</td></tr>
+                <tr><td style="padding: 12px;"><code>list.slice</code></td><td>Extrai parte</td></tr>
+                <tr><td style="padding: 12px;"><code>list.sort</code></td><td>Ordena</td></tr>
+                <tr><td style="padding: 12px;"><code>list.reverse</code></td><td>Inverte</td></tr>
+                <tr><td style="padding: 12px;"><code>list.filter</code></td><td>Filtra elementos</td></tr>
+                <tr><td style="padding: 12px;"><code>list.contains</code></td><td>Verifica se contém</td></tr>
+                <tr><td style="padding: 12px;"><code>list.index</code></td><td>Índice do elemento</td></tr>
+                <tr><td style="padding: 12px;"><code>list.unique</code></td><td>Remove duplicados</td></tr>
+                <tr><td style="padding: 12px;"><code>list.flatten</code></td><td>Achata lista aninhada</td></tr>
+            </tbody>
+        </table>
+
+        <h2>Outras Categorias</h2>
+        <div class="feature-grid">
+            <div class="feature-item">
+                <h4>json (2)</h4>
+                <p>parse, stringify</p>
+            </div>
+            <div class="feature-item">
+                <h4>date (5)</h4>
+                <p>now, format, parse, add, diff</p>
+            </div>
+            <div class="feature-item">
+                <h4>http (2)</h4>
+                <p>get, post</p>
+            </div>
+            <div class="feature-item">
+                <h4>crypto (2)</h4>
+                <p>hash, uuid</p>
+            </div>
+            <div class="feature-item">
+                <h4>random (3)</h4>
+                <p>number, choice, shuffle</p>
+            </div>
+            <div class="feature-item">
+                <h4>log (2)</h4>
+                <p>print, write</p>
+            </div>
+            <div class="feature-item">
+                <h4>system (2)</h4>
+                <p>env, sleep</p>
+            </div>
+            <div class="feature-item">
+                <h4>meta (4)</h4>
+                <p>version, tools, metrics, cache_stats</p>
+            </div>
+        </div>
+
+        <div class="btn-group" style="margin-top: 50px;">
+            <a href="/engine/syntax" class="btn btn-secondary">Ver Sintaxe</a>
+            <a href="/api" class="btn btn-primary">API REST</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
