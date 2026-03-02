@@ -1,0 +1,31 @@
+# Sistema 3: Fluxo de classificacao com LLM (com fallback deterministico)
+
+SET ticket TO "Cliente reporta falha urgente no checkout"
+SET modelo TO "gpt-4o-mini"
+
+CALL http.post WITH url="https://api.openai.com/v1/chat/completions", body={"model": ${modelo}, "messages": [{"role": "system", "content": "Classifique prioridade: high ou normal."}, {"role": "user", "content": ${ticket}}]} AS resposta_llm
+
+CALL json.stringify WITH value=${resposta_llm} AS resposta_json
+CALL string.contains WITH text=${resposta_json}, search="error" AS houve_erro
+
+IF ${houve_erro} == True THEN
+    # Fallback deterministico quando nao ha acesso HTTP/autorizacao
+    SET prioridade TO "high"
+    SET origem TO "fallback_local"
+ELSE
+    CALL string.lower WITH text=${resposta_json} AS resposta_lower
+    CALL string.contains WITH text=${resposta_lower}, search="high" AS is_high
+
+    IF ${is_high} == True THEN
+        SET prioridade TO "high"
+    ELSE
+        SET prioridade TO "normal"
+    ENDIF
+
+    SET origem TO "llm_http"
+ENDIF
+
+SET saida TO {"ticket": ${ticket}, "prioridade": ${prioridade}, "origem": ${origem}}
+CALL json.stringify WITH value=${saida} AS saida_json
+CALL log.print WITH message="Classificacao final: ${saida_json}"
+RETURN ${saida}
