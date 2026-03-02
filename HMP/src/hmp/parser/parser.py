@@ -173,7 +173,11 @@ class Parser:
         return LoopTimesStatement(line=start_token.line, count=count, body=body)
 
     def _parse_while(self, start_token: Token) -> WhileStatement:
-        condition = self._parse_complex_expression(stop_types=[TokenType.NEWLINE, TokenType.EOF])
+        condition = self._parse_complex_expression(stop_types=[TokenType.DO, TokenType.NEWLINE, TokenType.EOF])
+        # Suporta ambas as sintaxes:
+        # 1) WHILE <condicao>
+        # 2) WHILE <condicao> DO
+        self._match(TokenType.DO)
         self._match(TokenType.NEWLINE)
         body = self._parse_block(stop_types=[TokenType.ENDWHILE])
         self._expect(TokenType.ENDWHILE, "Esperado ENDWHILE para fechar bloco WHILE")
