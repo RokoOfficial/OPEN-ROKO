@@ -177,13 +177,15 @@ OPEN-ROKO/
 
 ## 🤝 Comunidade e contribuição
 
+Este projeto foi idealizado e criado por **RokoOfficial**. Todos os direitos sobre a arquitetura original e implementação são mantidos pelo autor sob os termos da licença Apache 2.0.
+
 Contribuições são bem-vindas! Sinta-se à vontade para abrir issues e pull requests no repositório do GitHub.
 
 ---
 
 ## 📜 Licença
 
-Este projeto é distribuído sob a licença descrita em `LICENSE`.
+Este projeto é distribuído sob a **Apache License 2.0**. Veja o arquivo `LICENSE` para mais detalhes.
 
 ---
 
