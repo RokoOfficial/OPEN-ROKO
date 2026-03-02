@@ -66,6 +66,11 @@ def safe_eval_expr(
     if '${' in expr_str:
         expr_str = re.sub(r'\$\{(.*?)\}', replace_var, expr_str)
 
+    # Normaliza operadores logicos estilo DSL para sintaxe Python
+    expr_str = re.sub(r'\bAND\b', 'and', expr_str, flags=re.IGNORECASE)
+    expr_str = re.sub(r'\bOR\b', 'or', expr_str, flags=re.IGNORECASE)
+    expr_str = re.sub(r'\bNOT\b', 'not', expr_str, flags=re.IGNORECASE)
+
     try:
         tree = ast.parse(expr_str, mode='eval')
         return _eval_node(tree.body, variables)

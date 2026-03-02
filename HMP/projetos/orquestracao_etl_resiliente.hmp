@@ -1,0 +1,39 @@
+# Sistema 2: ETL resiliente com validacao, fallback e metricas
+
+SET dados_brutos TO ["10", "20", "erro", "35", "", "50"]
+SET dados_validos TO []
+SET descartados TO []
+SET soma TO 0
+SET idx TO 0
+
+CALL list.length WITH list=${dados_brutos} AS total
+
+WHILE idx < total DO
+    CALL list.get WITH list=${dados_brutos}, index=${idx} AS item
+    CALL string.trim WITH text=${item} AS item_limpo
+
+    IF ${item_limpo} == "" THEN
+        CALL list.push WITH list=${descartados}, value={"indice": ${idx}, "motivo": "vazio"} AS descartados
+    ELSE
+        IF ${item_limpo} == "erro" THEN
+            CALL list.push WITH list=${descartados}, value={"indice": ${idx}, "motivo": "token_invalido"} AS descartados
+        ELSE
+            CALL list.push WITH list=${dados_validos}, value=${item_limpo} AS dados_validos
+            CALL math.sum WITH a=${soma}, b=${item_limpo} AS soma
+        ENDIF
+    ENDIF
+
+    SET idx TO ${idx + 1}
+ENDWHILE
+
+CALL list.length WITH list=${dados_validos} AS qtd_validos
+IF ${qtd_validos} > 0 THEN
+    SET media TO ${soma / qtd_validos}
+ELSE
+    SET media TO 0
+ENDIF
+
+SET relatorio TO {"total_entrada": ${total}, "validos": ${qtd_validos}, "descartados": ${descartados}, "media": ${media}}
+CALL json.stringify WITH value=${relatorio} AS relatorio_json
+CALL log.print WITH message="ETL concluido: ${relatorio_json}"
+RETURN ${relatorio}

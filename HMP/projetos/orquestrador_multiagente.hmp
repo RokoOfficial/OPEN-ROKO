@@ -1,0 +1,46 @@
+# Sistema 4: Orquestrador multiagente (planejar -> executar -> validar)
+
+FUNCTION agente_planejador(objetivo)
+    RETURN [{"etapa": "coletar_contexto", "agente": "research"}, {"etapa": "gerar_solucao", "agente": "builder"}, {"etapa": "validar_saida", "agente": "qa"}]
+ENDFUNCTION
+
+FUNCTION agente_executor(etapa)
+    IF ${etapa} == "coletar_contexto" THEN
+        RETURN {"ok": True, "saida": "contexto consolidado"}
+    ELSE
+        IF ${etapa} == "gerar_solucao" THEN
+            RETURN {"ok": True, "saida": "solucao proposta"}
+        ELSE
+            IF ${etapa} == "validar_saida" THEN
+                RETURN {"ok": True, "saida": "validacao aprovada"}
+            ELSE
+                RETURN {"ok": False, "saida": "etapa desconhecida"}
+            ENDIF
+        ENDIF
+    ENDIF
+ENDFUNCTION
+
+SET objetivo TO "automatizar triagem de tickets"
+CALL agente_planejador WITH objetivo=${objetivo} AS plano
+
+SET historico TO []
+SET idx TO 0
+CALL list.length WITH list=${plano} AS total_etapas
+SET sucesso_global TO True
+
+WHILE idx < total_etapas AND sucesso_global == True DO
+    CALL list.get WITH list=${plano}, index=${idx} AS item
+    CALL agente_executor WITH etapa=${item["etapa"]} AS resultado
+    CALL list.push WITH list=${historico}, value={"etapa": ${item["etapa"]}, "agente": ${item["agente"]}, "resultado": ${resultado}} AS historico
+
+    IF ${resultado["ok"]} == False THEN
+        SET sucesso_global TO False
+    ENDIF
+
+    SET idx TO ${idx + 1}
+ENDWHILE
+
+SET resumo TO {"objetivo": ${objetivo}, "sucesso": ${sucesso_global}, "execucoes": ${historico}}
+CALL json.stringify WITH value=${resumo} AS resumo_json
+CALL log.print WITH message="Resumo multiagente: ${resumo_json}"
+RETURN ${resumo}

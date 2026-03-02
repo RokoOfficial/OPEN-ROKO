@@ -19,6 +19,7 @@ class TokenType(Enum):
     TIMES = auto()
     ENDLOOP = auto()
     WHILE = auto()
+    DO = auto()
     ENDWHILE = auto()
     FOR = auto()
     EACH = auto()
@@ -81,6 +82,7 @@ class Tokenizer:
         'TIMES': TokenType.TIMES,
         'ENDLOOP': TokenType.ENDLOOP,
         'WHILE': TokenType.WHILE,
+        'DO': TokenType.DO,
         'ENDWHILE': TokenType.ENDWHILE,
         'FOR': TokenType.FOR,
         'EACH': TokenType.EACH,

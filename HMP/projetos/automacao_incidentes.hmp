@@ -1,0 +1,49 @@
+# Sistema 1: Automacao de incidentes com classificacao, priorizacao e acoes
+
+FUNCTION classificar_prioridade(severidade, servico_critico)
+    IF ${severidade} >= 9 THEN
+        RETURN "P1"
+    ELSE
+        IF ${severidade} >= 7 OR ${servico_critico} == True THEN
+            RETURN "P2"
+        ELSE
+            IF ${severidade} >= 4 THEN
+                RETURN "P3"
+            ELSE
+                RETURN "P4"
+            ENDIF
+        ENDIF
+    ENDIF
+ENDFUNCTION
+
+FUNCTION decidir_acao(prioridade)
+    IF ${prioridade} == "P1" THEN
+        RETURN "escalar_sre"
+    ELSE
+        IF ${prioridade} == "P2" THEN
+            RETURN "abrir_guerra_room"
+        ELSE
+            RETURN "monitorar"
+        ENDIF
+    ENDIF
+ENDFUNCTION
+
+SET incidentes TO [{"id": "INC-001", "sev": 9, "critico": True}, {"id": "INC-002", "sev": 6, "critico": True}, {"id": "INC-003", "sev": 3, "critico": False}]
+SET processados TO []
+SET i TO 0
+CALL list.length WITH list=${incidentes} AS total
+
+WHILE i < total DO
+    CALL list.get WITH list=${incidentes}, index=${i} AS incidente
+    CALL classificar_prioridade WITH severidade=${incidente["sev"]}, servico_critico=${incidente["critico"]} AS prioridade
+    CALL decidir_acao WITH prioridade=${prioridade} AS acao
+
+    SET registro TO {"id": ${incidente["id"]}, "prioridade": ${prioridade}, "acao": ${acao}}
+    CALL list.push WITH list=${processados}, value=${registro} AS processados
+    CALL log.print WITH message="Incidente processado com prioridade ${prioridade} -> ${acao}"
+
+    SET i TO ${i + 1}
+ENDWHILE
+
+CALL log.print WITH message="Total processado: ${total}"
+RETURN ${processados}
