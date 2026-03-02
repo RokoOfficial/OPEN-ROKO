@@ -90,6 +90,29 @@ class TestLoops:
         ''')
         assert result['variables']['i'] == 5
 
+    def test_while_with_do_keyword(self):
+        result = run_script('''
+            SET i TO 0
+            WHILE ${i} < 3 DO
+                SET i TO ${i + 1}
+            ENDWHILE
+        ''')
+        assert result['variables']['i'] == 3
+
+    def test_while_expression_without_dollar_braces(self):
+        result = run_script('''
+            SET tentativa TO 1
+            SET limite TO 4
+            SET sucesso TO False
+            WHILE tentativa <= limite AND sucesso == False DO
+                SET tentativa TO ${tentativa + 1}
+                IF ${tentativa} > ${limite} THEN
+                    SET sucesso TO True
+                ENDIF
+            ENDWHILE
+        ''')
+        assert result['variables']['sucesso'] is True
+
 
 class TestConditionals:
     """Testes de condicionais."""
